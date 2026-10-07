@@ -96,10 +96,65 @@ nlohmann::json output = water_quality253::result_to_json(result);
 
 调用之间无共享状态，求解过程在内部副本和残量网络中进行，不会修改输入对象。
 
+## 稳态水质混合评估
+
+在原有水量求解之上，库提供单一保守物质的稳态混合评估：给定每个供水节点（`b > 0`）外来水的浓度（mg/L），报告混合后各用水点的水质。
+
+### 假设
+
+- 水量仍沿用原最小费用流最优方案（立方米），不另选更清洁的同价计划。
+- 节点无存储；外来供水与全部入流瞬时完全混合，该节点的用水和全部出流取相同浓度。
+- 供水节点也可能有管段入流，其浓度同样由混合方程联立求得，不直接固定为外来浓度。
+- 物质沿管段无衰减、无生成，不考虑输送延迟；仅正流量管段传递物质。
+- 有外来水源可达的循环按联立质量守恒求稳态；无外来水源的闭合循环浓度不确定（`null`），不填零；没有任何水经过的节点标记为 `no_water`。
+- 浓度须为 0 至 1000000 的有限数（mg/L）；每个 `b > 0` 的节点必须恰好出现一次，其他或未知 id 一律拒绝。
+- 数值容差：线性系统采用部分主元高斯消元，浓度相对误差不超过约 `1e-9`（输出中的 `tolerance` 字段）。
+
+### JSON 输入与输出
+
+在原输入基础上增加 `source_quality` 数组：
+
+```json
+{
+  "nodes": [{"id": "S", "b": 5}, {"id": "D", "b": -5}],
+  "edges": [{"id": "sd", "from": "S", "to": "D", "lower": 0, "upper": 10, "cost": 1}],
+  "source_quality": [{"id": "S", "concentration_mg_l": 42.5}]
+}
+```
+
+成功输出在原水量字段（`flows`、`balances`、`total_cost`）之外包含：
+
+- `tolerance`：数值容差（相对，约 `1e-9`）。
+- `node_quality`：按输入节点顺序给出 `id`、`state`（`ok` / `undetermined` / `no_water`）与 `concentration_mg_l`；不确定或无水时为 `null`。用水节点（`b < 0`）另含 `withdrawn_g`，即取走的物质量（克，`mg/L × m³ = g`）。
+- `edge_quality`：按输入管段顺序给出出水浓度（即上游节点混合浓度）；零流量或浓度不确定的管段为 `null`。
+
+非法输入（`invalid_input`）或无解（`infeasible`）时沿用原状态与割证书，不交付任何水质结果。JSON 数值溢出（如 `1e400`）同样按 `invalid_input` 处理，不会异常退出。
+
+### 命令行与 C++ 调用
+
+```sh
+make all
+make quality-example
+./build/water_quality253_quality < examples/quality_example.json
+```
+
+```cpp
+#include "water_quality253/water_quality.h"
+
+water_quality253::Model model;
+std::vector<water_quality253::SourceQualityInput> sources = {{"S", 42.5}};
+water_quality253::QualityResult result =
+    water_quality253::solve_quality(model, sources);
+```
+
+JSON 适配：`solve_quality_json_string` / `quality_result_to_json`，见 `include/water_quality253/json_adapter.h`。
+
 ## 实现概要
 
 - `src/validation.cpp`：执行模型级严格校验并建立节点索引。
 - `src/residual_network.cpp`：维护前向/反向弧及残量容量。
 - `src/min_cost_flow.cpp`：固定下界、构造超源/超汇，使用带势 Dijkstra 连续最短路求整数最小费用流。
 - `src/solution_builder.cpp`：恢复原管段流量、节点净流出，或从残量可达集恢复原始节点割证书。
-- `src/json_adapter.cpp`：复用核心库接口完成 JSON 输入输出适配。
+- `src/water_quality.cpp`：校验外来水浓度输入并复用原求解取得完整最优方案。
+- `src/quality_mixing.cpp`：按正流量拓扑联立稳态质量守恒，标记不确定循环与无水节点。
+- `src/json_adapter.cpp`：复用核心库接口完成水量与水质 JSON 输入输出适配。

@@ -1,0 +1,22 @@
+{
+  "nodes": [
+    {"id": "source_s1", "b": 10},
+    {"id": "source_s2", "b": 6},
+    {"id": "junction_j1", "b": 0},
+    {"id": "junction_j2", "b": 0},
+    {"id": "user_d1", "b": -9},
+    {"id": "user_d2", "b": -7}
+  ],
+  "edges": [
+    {"id": "s1_to_j1", "from": "source_s1", "to": "junction_j1", "lower": 0, "upper": 10, "cost": 1},
+    {"id": "j1_to_j2", "from": "junction_j1", "to": "junction_j2", "lower": 2, "upper": 10, "cost": 1},
+    {"id": "j2_to_j1", "from": "junction_j2", "to": "junction_j1", "lower": 2, "upper": 10, "cost": 1},
+    {"id": "s2_to_j2", "from": "source_s2", "to": "junction_j2", "lower": 0, "upper": 10, "cost": 1},
+    {"id": "j1_to_d1", "from": "junction_j1", "to": "user_d1", "lower": 0, "upper": 10, "cost": 1},
+    {"id": "j2_to_d2", "from": "junction_j2", "to": "user_d2", "lower": 0, "upper": 10, "cost": 1}
+  ],
+  "source_quality": [
+    {"id": "source_s1", "concentration_mg_l": 50},
+    {"id": "source_s2", "concentration_mg_l": 200}
+  ]
+}
