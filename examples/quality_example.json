@@ -1,0 +1,20 @@
+{
+  "nodes": [
+    {"id": "river_a", "b": 8},
+    {"id": "well_b", "b": 4},
+    {"id": "mix_x", "b": 0},
+    {"id": "loop_y", "b": 0},
+    {"id": "city_d", "b": -12}
+  ],
+  "edges": [
+    {"id": "a_to_x", "from": "river_a", "to": "mix_x", "lower": 0, "upper": 10, "cost": 1},
+    {"id": "b_to_x", "from": "well_b", "to": "mix_x", "lower": 0, "upper": 10, "cost": 1},
+    {"id": "x_to_d", "from": "mix_x", "to": "city_d", "lower": 0, "upper": 20, "cost": 1},
+    {"id": "x_to_y", "from": "mix_x", "to": "loop_y", "lower": 2, "upper": 2, "cost": 0},
+    {"id": "y_to_x", "from": "loop_y", "to": "mix_x", "lower": 2, "upper": 2, "cost": 0}
+  ],
+  "sources": [
+    {"node": "river_a", "concentration_mg_l": 10},
+    {"node": "well_b", "concentration_mg_l": 40}
+  ]
+}

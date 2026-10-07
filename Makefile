@@ -29,6 +29,9 @@ test: build/water_quality253_selftest
 example: build/water_quality253
 	./build/water_quality253 < examples/example.json
 
+quality-example: build/water_quality253
+	./build/water_quality253 < examples/quality_example.json
+
 clean:
 	rm -f src/*.o
 	rm -rf build

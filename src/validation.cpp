@@ -1,6 +1,7 @@
 #include "validation.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 
 namespace water_quality253 {
@@ -89,6 +90,50 @@ ValidationOutcome validate_model(Model model) {
     outcome.value.model = std::move(model);
     outcome.value.node_index = std::move(node_index);
     return outcome;
+}
+
+bool validate_sources(const ValidatedModel& model,
+                      const std::vector<SourceInput>& sources,
+                      std::string& error,
+                      std::vector<double>& concentration_by_index) {
+    const std::size_t count = model.model.nodes.size();
+    concentration_by_index.assign(count, 0.0);
+    std::vector<char> covered(count, false);
+    int required = 0;
+    for (std::size_t i = 0; i < count; ++i) {
+        if (model.model.nodes[i].b > 0) ++required;
+    }
+
+    for (const SourceInput& source : sources) {
+        const auto it = model.node_index.find(source.node_id);
+        if (it == model.node_index.end()) {
+            error = "source concentration given for unknown node: " + source.node_id;
+            return false;
+        }
+        const int index = it->second;
+        if (model.model.nodes[static_cast<std::size_t>(index)].b <= 0) {
+            error = "source concentration given for non-supply node: " + source.node_id;
+            return false;
+        }
+        if (covered[static_cast<std::size_t>(index)]) {
+            error = "duplicate source concentration for node: " + source.node_id;
+            return false;
+        }
+        if (!std::isfinite(source.concentration_mg_l) ||
+            source.concentration_mg_l < 0.0 || source.concentration_mg_l > 1e6) {
+            error = "source concentration out of range for node: " + source.node_id;
+            return false;
+        }
+        covered[static_cast<std::size_t>(index)] = true;
+        concentration_by_index[static_cast<std::size_t>(index)] =
+            source.concentration_mg_l;
+    }
+
+    if (static_cast<int>(sources.size()) != required) {
+        error = "every supply node (b > 0) requires exactly one source concentration";
+        return false;
+    }
+    return true;
 }
 
 }  // namespace water_quality253
