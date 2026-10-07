@@ -1,0 +1,12 @@
+{
+  "nodes": [
+    {"id": "source_a", "b": 8},
+    {"id": "tank_b", "b": 0},
+    {"id": "plant_c", "b": -8}
+  ],
+  "edges": [
+    {"id": "a_to_b", "from": "source_a", "to": "tank_b", "lower": 2, "upper": 6, "cost": 3},
+    {"id": "a_to_c", "from": "source_a", "to": "plant_c", "lower": 0, "upper": 8, "cost": 10},
+    {"id": "b_to_c", "from": "tank_b", "to": "plant_c", "lower": 1, "upper": 8, "cost": 4}
+  ]
+}
